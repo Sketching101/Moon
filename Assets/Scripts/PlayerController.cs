@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,11 +13,13 @@ public class PlayerController : MonoBehaviour
 
     private Sprite shotgun;
     private Sprite pistol;
+    private Sprite railgun;
     private Animator pistolAnim, shotgunAnim;
     private SpriteRenderer spriteRenderer;
+    private int num_gun;
 
     public bool lookR;
-    public string[] guns = new string[2];
+    public string[] guns;
     public int currentGun = 0;
 
     public float camDistance;
@@ -28,12 +31,15 @@ public class PlayerController : MonoBehaviour
 
     public Transform bullet;
     public Transform shotgunBullet;
+    public Transform railgunBullet;
 
     private Rigidbody2D rb2d;
     private DashAbility dashLogic;
 
     public Animator animator;
     private int time = 0;
+    
+    private Vector2 gunDir = new Vector2(1, 0);
 
 
     public enum ActState
@@ -48,12 +54,23 @@ public class PlayerController : MonoBehaviour
         gunGameObject = gun.gameObject;
         shotgun = Resources.Load<Sprite>("Shotgun1") as Sprite;
         pistol = Resources.Load<Sprite>("Pistol1") as Sprite;
+        railgun = Resources.Load<Sprite>("railgun") as Sprite;
+
         pistolAnim = Resources.Load<Animator>("PistolAnimator") as Animator;
         shotgunAnim = Resources.Load<Animator>("ShotgunAnimator") as Animator;
-
+        spriteRenderer = gun.GetComponent<SpriteRenderer>();
+        guns = new string[3];
+        int level = GameManager.instance.GetComponent<LevelManagement>().GetLevel();
+        if (level < 4)
+        {
+            num_gun = 2;
+        }else{
+            num_gun = 3;
+        }
         guns[0] = "Pistol1";
         guns[1] = "Shotgun1";
-        spriteRenderer = gun.GetComponent<SpriteRenderer>();
+        guns[2] = "Railgun1";
+        GameManager.instance.CombatCounter = 0;
 
     }
 
@@ -62,9 +79,17 @@ public class PlayerController : MonoBehaviour
         // rotate gun
         if (!GameManager.instance.isStopped)
         {
-            Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Vector2 mouseDelta = mouseWorld - gunPivot.position;
-            float angle = Mathf.Atan2(mouseDelta.y, mouseDelta.x);
+            if(GameManager.instance.useKeyboard) {
+                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                gunDir = mouseWorld - gunPivot.position;
+            }
+            else {
+                if(Input.GetAxis("Gun X") != 0.0f || Input.GetAxis("Gun Y") != 0.0f) {
+                    gunDir = new Vector2(Input.GetAxis("Gun X"), Input.GetAxis("Gun Y"));
+                }
+            }
+
+            float angle = Mathf.Atan2(gunDir.y, gunDir.x);
             gunPivot.rotation = Quaternion.Euler(0, 0, angle * 180 / Mathf.PI);
 
             if(angle > 1.5 || angle < -1.5){
@@ -87,7 +112,7 @@ public class PlayerController : MonoBehaviour
             Vector3 camTarget = new Vector3(camDistance * Mathf.Cos(angle), camDistance * Mathf.Sin(angle), -10);
             cam.localPosition = Vector3.Lerp(cam.localPosition, camTarget, 0.1f);
             time++;
-            if (Input.GetButton("Fire1"))
+            if (Input.GetAxis("Fire1") > 0)
             {
                 switch(guns[currentGun]){
                     case "Pistol1":
@@ -100,7 +125,7 @@ public class PlayerController : MonoBehaviour
                         }
                         break;
                     case "Shotgun1":
-                        if(time > 70)
+                        if(time > 90)
                         {
                             gunGameObject.GetComponent<Animator>().SetTrigger("FireShotgun");
                             GetComponent<PlayerSoundController>().FireShotgun();
@@ -121,16 +146,30 @@ public class PlayerController : MonoBehaviour
                             time = 0;
                         } 
                         break;
+                    case "Railgun1":
+                        if(time>100){
+                            GetComponent<PlayerSoundController>().FireRailgun();
+                            shootBullet(railgunBullet, gun.position, gun.rotation);
+                            time = 0;
+                        }
+                        break;
                     default:
                         //shootBullet(bullet, gun.position, gun.rotation);
                         break;
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.Q)){
+            int switchGun = currentGun;
+            if(Input.GetButtonDown("SwitchForward")) {
+                switchGun = (switchGun + 1) % num_gun;
+            }
+            if(Input.GetButtonDown("SwitchBack")) {
+                switchGun = (switchGun + num_gun - 1) % num_gun;
+            }
 
-                currentGun = (currentGun + 1) % guns.Length; 
-                switch(guns[currentGun]){
+            if(switchGun != currentGun) {
+                currentGun = switchGun;
+                switch(guns[currentGun]) {
                     case "Pistol1":
                         gunGameObject.GetComponent<Animator>().SetTrigger("ToPistol");
                         gunGameObject.GetComponent<SpriteRenderer>().sprite = pistol;
@@ -138,8 +177,12 @@ public class PlayerController : MonoBehaviour
                     case "Shotgun1":
                         gunGameObject.GetComponent<Animator>().SetTrigger("ToShotgun");
                         gunGameObject.GetComponent<SpriteRenderer>().sprite = shotgun;
+                        break;      
+                    case "Railgun1":
+                        gunGameObject.GetComponent<Animator>().SetTrigger("ToRailgun");
+                        gunGameObject.GetComponent<SpriteRenderer>().sprite = railgun;
                         break;
-                    default: 
+                    default:
                         gunGameObject.GetComponent<SpriteRenderer>().sprite = pistol;
                         break;
 
@@ -198,12 +241,15 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Collision detected");
             if (collision.tag == "Killable" && dashLogic.frame == DashAbility.Frames.Damage)
             {
-                if (collision.gameObject.GetComponent<Health>().takeDamage(swordDmg))
+                if (collision.isTrigger)
                 {
-                    dashLogic.setKilled();
-                    hp.takeHeal(2);
+                    if (collision.gameObject.GetComponent<Health>().takeDamage(swordDmg))
+                    {
+                        dashLogic.setKilled();
+                        hp.takeHeal(35);
+                    }
+                    Debug.Log("Contact");
                 }
-                Debug.Log("Contact");
             }
             else if (collision.tag == "Killable")
             {
@@ -214,6 +260,10 @@ public class PlayerController : MonoBehaviour
             {
 
 
+            }
+            else if (collision.gameObject.name =="Railgun") {
+                Destroy(collision.gameObject);
+                num_gun = 3;
             }
         }
     }

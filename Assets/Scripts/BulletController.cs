@@ -42,14 +42,20 @@ public class BulletController : MonoBehaviour
                 if(enemy) {
                     if(transform.parent.name == "PistolBullet(Clone)"){
                         enemy.ReceiveStun();
-                        enemy.KnockBack(transform.right);
+                        enemy.KnockBack(transform.right, 0.15f);
+                    }else if(transform.parent.name == "ShotgunBullet(Clone)"){
+                        enemy.KnockBack(transform.right, 0.4f);
                     }
                 }
             }
             Destroy(transform.parent.gameObject);
-
         }
-        else if (collision.tag != "Killable" && transform.parent.tag == "EnemyAttack")
+        else if(transform.parent.tag == "Energy" && collision.tag == "Player")
+        {
+            collision.gameObject.GetComponent<Health>().takeDamage(dmg);
+            Destroy(transform.parent.gameObject);
+        }
+        else if (collision.tag != "Killable" && (transform.parent.tag == "EnemyAttack" || transform.parent.tag == "BossAttack") && collision.tag != "BossAttack")
         {
             if(collision.tag == "Player")
             {

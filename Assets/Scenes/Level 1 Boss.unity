@@ -3134,7 +3134,7 @@ MonoBehaviour:
   pistol: {fileID: 432646758}
   MGPivot: {fileID: 42127310}
   machineGun: {fileID: 1594479383}
-  drone: {fileID: 2991867501808357464, guid: 58bb4690722ede142862e9aaa20aa0eb, type: 3}
+  drone: {fileID: 8561059321059478618, guid: c3b18e0da52861241ab68357911e9369, type: 3}
   door: {fileID: 257066943}
   explosion: {fileID: 5082654568878365804, guid: 65a0d79748873e145836341579cc11fc,
     type: 3}
@@ -14557,6 +14557,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b3d888be67b6b846a04ada85682c912, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  boss_level: 1
 --- !u!1001 &1377873279
 PrefabInstance:
   m_ObjectHideFlags: 0

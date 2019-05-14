@@ -61,7 +61,7 @@ public class EnemyController : MonoBehaviour
 
     void Update()
     {
-        if((hp.RemainingHP / hp.MaxHP) < 0.75) {
+        if((hp.RemainingHP / hp.MaxHP) < 0.5) {
             SpriteRenderer playerSprite = GetComponent<SpriteRenderer>();
             float flashSpeed = 4.0f * (1-(hp.RemainingHP / hp.MaxHP));
             float color = (Mathf.Sin(2.0f * Mathf.PI * flashSpeed * Time.time) + 1.0f) / 2.0f;
@@ -75,7 +75,7 @@ public class EnemyController : MonoBehaviour
     }
     public void ReceiveStun(){
         stunCount++;
-        if (stunCount == 2)
+        if (stunCount == 4)
         {
             SetMoveTo(transform);
             stunned = true;
@@ -83,9 +83,12 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    public void KnockBack(Vector2 Direction){
+    public void KnockBack(Vector2 Direction,float time){
+        if(knockBacked == false){
+            knockBackDirection = Direction;
+            knockBackTime = time;
+        }
         knockBacked = true;
-        knockBackDirection = Direction;
         print("KnockBack!!!!!!!!");
 
 
@@ -107,9 +110,9 @@ public class EnemyController : MonoBehaviour
             }
             if (knockBacked == true){
                 SetMoveTo(transform);
-                knockBackTime += Time.deltaTime;
+                knockBackTime -= Time.deltaTime;
                 transform.Translate(knockBackDirection * Time.deltaTime * 5);
-                if (knockBackTime >= 0.5){
+                if (knockBackTime <= 0){
                     knockBackTime = 0;
                     knockBacked = false;
                 }
@@ -171,7 +174,8 @@ public class EnemyController : MonoBehaviour
         }
         else
         {
-            GameManager.instance.AggroCounter(0, false);
+            if(routine.aggroedOnce)
+                GameManager.instance.AggroCounter(0, false);
             Instantiate(corpse, new Vector3(rb2d.gameObject.transform.position.x + 1f, rb2d.gameObject.transform.position.y - 0.7f, rb2d.gameObject.transform.position.z), Quaternion.identity);
             Destroy(rb2d.gameObject);
         }

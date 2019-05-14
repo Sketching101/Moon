@@ -42,18 +42,27 @@ public class LevelManagement : MonoBehaviour
     }
 
     public void NextLevel() {
-        currentLevel++;
+        SetLevel((currentLevel + 1) % levels.Length);
+    }
+
+    public void SetLevel(int level) {
+        currentLevel = level;
         SceneManager.LoadScene(levels[currentLevel]);
-        //if(currentLevel == 2)
-        //{
-        //    GameManager.instance.SetBoss();
-        //}
         GameManager.instance.isStopped = false;
+    }
+
+    public int GetLevel() {
+        return currentLevel;
     }
 
     public void ExitMainMenu() {
         currentLevel = 0;
         SceneManager.LoadScene("Main Menu");
         GameManager.instance.isStopped = false;
+    }
+
+    public bool IsBossLevel() {
+        string scene = SceneManager.GetActiveScene().name;
+        return scene.Contains("Boss");
     }
 }
